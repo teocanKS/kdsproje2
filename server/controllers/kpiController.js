@@ -1,4 +1,4 @@
-import { queryFirmById, queryLatestTahminleme } from '../db/supabase.js'
+import { queryFirmById, queryLatestTahminleme, queryAyarlar } from '../db/supabase.js'
 
 // Maximum money value in TL (999M)
 const MAX_MONEY_TL = 999_000_000
@@ -16,17 +16,30 @@ function clampMoney(value) {
  * 
  * KPIs:
  * 1) Tahmini Getiri (M) - from firma_tahminleme.tahmini_getiri (latest record)
- * 2) Kadın Girişimci Bütçesi (M) - calculated as firmalar.ciro * 0.72
+ * 2) Kadın Girişimci Bütçesi (M) - calculated as tahmini_getiri * ayarlar.butce_yuzdesi (0.72)
+ * 
+ * CORRECTED FORMULA: kadin_girisimci_butcesi = tahmini_getiri * 0.72
+ * (NOT ciro * 0.72)
  * 
  * All money values capped at 999M TL
  */
 export async function getKpisForFirm(firmaId) {
+    // Fetch settings for butce_yuzdesi
+    let ayarlar = { butce_yuzdesi: 0.72 }
+    try {
+        ayarlar = await queryAyarlar()
+    } catch (e) {
+        console.error('[kpiController] Error fetching ayarlar:', e)
+    }
+    const butceYuzdesi = ayarlar?.butce_yuzdesi || 0.72
+
     if (!firmaId) {
         return {
             tahminiGetiri: 0,
             kadinGirisimciBütcesi: 0,
             firmaAdi: null,
-            ciro: 0
+            butceYuzdesi,
+            hesapKontrol: false
         }
     }
 
@@ -43,7 +56,8 @@ export async function getKpisForFirm(firmaId) {
             tahminiGetiri: 0,
             kadinGirisimciBütcesi: 0,
             firmaAdi: null,
-            ciro: 0
+            butceYuzdesi,
+            hesapKontrol: false
         }
     }
 
@@ -60,16 +74,22 @@ export async function getKpisForFirm(firmaId) {
         tahminiGetiri = 0
     }
 
-    // Calculate Kadın Girişimci Bütçesi
-    // Formula: ciro * 0.72 (72% allocation for women entrepreneur support)
-    // Clamp ciro and result to max 999M
-    const ciro = clampMoney(firma.ciro || 0)
-    const kadinGirisimciBütcesi = clampMoney(ciro * 0.72)
+    // CORRECTED FORMULA: Kadın Girişimci Bütçesi = tahmini_getiri * butce_yuzdesi
+    // Previously used ciro * 0.72 - NOW using tahmini_getiri * 0.72
+    const kadinGirisimciBütcesi = clampMoney(tahminiGetiri * butceYuzdesi)
+
+    // Check for edge cases
+    const hesapKontrol = (
+        kadinGirisimciBütcesi > tahminiGetiri ||
+        isNaN(kadinGirisimciBütcesi) ||
+        isNaN(tahminiGetiri)
+    )
 
     return {
         tahminiGetiri,
         kadinGirisimciBütcesi,
         firmaAdi: firma.ad || null,
-        ciro
+        butceYuzdesi,
+        hesapKontrol
     }
 }

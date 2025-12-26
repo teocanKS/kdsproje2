@@ -132,7 +132,17 @@ const recyclingInsight = computed(() => {
   return `${firm.geriDonusumOrani || 0}% geri dönüşüm oranı ile ${(firm.geriKazanilanAtik || 0).toFixed(1)} ton atık geri kazanılıyor.`
 })
 
-// Budget analysis
+// Budget analysis - NOW using tahmini_getiri as the base (NOT ciro)
+const tahminiGetiri = computed(() => {
+  return kpis.value?.tahminiGetiri || 0
+})
+
+const budgetCeiling = computed(() => {
+  // Budget ceiling = tahmini_getiri * butce_yuzdesi (0.72)
+  const yuzdesi = kpis.value?.butceYuzdesi || 0.72
+  return tahminiGetiri.value * yuzdesi
+})
+
 const budgetAllocation = computed(() => {
   return kpis.value?.kadinGirisimciBütcesi || 0
 })
@@ -154,11 +164,11 @@ const budgetBadgeClass = computed(() => {
 })
 
 const budgetInsight = computed(() => {
-  const ciro = kpis.value?.ciro || 0
+  const getiri = tahminiGetiri.value
   const alloc = budgetAllocation.value
-  if (ciro === 0) return 'Ciro verisi yok'
-  const pct = ((alloc / ciro) * 100).toFixed(1)
-  return `Ciro'nun %${pct}'i kadın girişimci bütçesine ayrılıyor (${formatMillionsTRY(alloc)}).`
+  if (getiri === 0) return 'Tahmini getiri verisi yok'
+  const pct = ((alloc / getiri) * 100).toFixed(1)
+  return `Tahmini getirinin %${pct}'i kadın girişimci bütçesine ayrılıyor (${formatMillionsTRY(alloc)}).`
 })
 
 // Sustainability ranking
@@ -211,15 +221,18 @@ const recommendations = computed(() => {
   }
 
   // 2) Kadın Girişimci Bütçesini Optimize Et
+  // NOW using tahmini_getiri as the reference (NOT ciro)
+  const getiri = tahminiGetiri.value
   const alloc = budgetAllocation.value
-  const ciro = kpis.value?.ciro || 0
-  if (ciro > 0 && alloc < ciro * 0.5) {
+  const ceiling = budgetCeiling.value
+  
+  if (getiri > 0 && alloc < ceiling * 0.8) {
     recs.push({
       id: 'budget',
       icon: '💰',
       title: 'Kadın Girişimci Bütçesini Optimize Et',
-      priority: alloc < ciro * 0.3 ? 'Yüksek' : 'Orta',
-      explanation: `Mevcut bütçe tahsisi ${formatMillionsTRY(alloc)}. Hedef oran %72 olup, ek ${formatMillionsTRY((ciro * 0.72) - alloc)} ayrılabilir.`,
+      priority: alloc < ceiling * 0.5 ? 'Yüksek' : 'Orta',
+      explanation: `Mevcut bütçe tahsisi ${formatMillionsTRY(alloc)}. Tahmini getirinin %72'si (${formatMillionsTRY(ceiling)}) hedef tavan olup, ek ${formatMillionsTRY(ceiling - alloc)} ayrılabilir.`,
       actions: [
         'Kadın girişimci destekleme programlarını genişletin',
         'Mikro-kredi havuzlarına yatırım yapın',
@@ -266,7 +279,6 @@ const recommendations = computed(() => {
   }
 
   // 5) Tahmini Getiriyi Değerlendirin
-  const getiri = kpis.value?.tahminiGetiri || 0
   if (getiri > 0) {
     recs.push({
       id: 'forecast',

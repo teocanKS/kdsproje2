@@ -59,6 +59,20 @@ export async function queryLatestTahminleme(firmaId) {
     return data || null
 }
 
+// Query helper: Get ayarlar (settings) - first row
+export async function queryAyarlar() {
+    const supabase = getSupabase()
+    const { data, error } = await supabase
+        .from('ayarlar')
+        .select('*')
+        .limit(1)
+        .single()
+
+    if (error && error.code !== 'PGRST116') throw error
+    // Default values if no ayarlar found
+    return data || { butce_yuzdesi: 0.72, karbon_esik: 5000 }
+}
+
 // Query helper: Get all firms with their latest tahminleme
 export async function queryFirmsWithLatestTahminleme() {
     const supabase = getSupabase()
