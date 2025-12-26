@@ -4,3 +4,5 @@ dist
 .output
 *.log
 .DS_Store
+.env
+
