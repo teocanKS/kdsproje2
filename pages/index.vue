@@ -11,7 +11,7 @@
               </svg>
             </div>
             <div>
-              <h1 class="text-xl font-bold text-white">KDS</h1>
+              <h1 class="text-xl font-bold text-white">Sabancı Vakfı</h1>
               <p class="text-xs text-gray-400">Karar Destek Sistemi</p>
             </div>
           </div>
