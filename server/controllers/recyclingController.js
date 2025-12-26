@@ -10,17 +10,18 @@ import { queryFirmsWithRecycling } from '../db/supabase.js'
  * - firmalar.atik_miktari: Total waste produced (tons)
  * - firmalar.geri_donusum_orani: Recycling rate (percentage)
  * 
- * Decision Support Context:
- * - Identifies firms with best recycling performance
- * - Supports circular economy investment decisions
- * - Higher recovered waste indicates better resource efficiency
+ * Returns:
+ * - labels: top 10 firm names
+ * - values: top 10 recovered waste values
+ * - firms: top 10 firm objects with details
+ * - allFirms: ALL firms with their data (for lookup by selected firm)
  */
 export async function getTop10Recycling() {
     const firms = await queryFirmsWithRecycling()
 
     // Handle empty or null data
     if (!firms || !Array.isArray(firms)) {
-        return { labels: [], values: [], firms: [] }
+        return { labels: [], values: [], firms: [], allFirms: [] }
     }
 
     // Calculate recovered waste for each firm
@@ -39,21 +40,25 @@ export async function getTop10Recycling() {
         }
     }).filter(f => f !== null)
 
-    // Sort by recovered waste descending and take top 10
+    // Sort by recovered waste descending (ALL firms)
     const sorted = firmsWithCalc
-        .filter(f => f.geriKazanilanAtik > 0)
         .sort((a, b) => b.geriKazanilanAtik - a.geriKazanilanAtik)
+
+    // Assign rank to each firm
+    const allFirmsWithRank = sorted.map((f, index) => ({
+        ...f,
+        rank: index + 1
+    }))
+
+    // Top 10 for charts (filter > 0)
+    const top10 = allFirmsWithRank
+        .filter(f => f.geriKazanilanAtik > 0)
         .slice(0, 10)
 
     return {
-        labels: sorted.map(f => f.ad),
-        values: sorted.map(f => f.geriKazanilanAtik),
-        firms: sorted.map(f => ({
-            id: f.id,
-            ad: f.ad,
-            atikMiktari: f.atikMiktari,
-            geriDonusumOrani: f.geriDonusumOrani,
-            geriKazanilanAtik: f.geriKazanilanAtik
-        }))
+        labels: top10.map(f => f.ad),
+        values: top10.map(f => f.geriKazanilanAtik),
+        firms: top10,
+        allFirms: allFirmsWithRank
     }
 }

@@ -100,45 +100,59 @@ const {
   dssParams
 } = useDashboard()
 
-// Find selected firm in recycling data
+// Find selected firm in recycling data - now use allFirms for complete lookup
 const selectedFirmRecycling = computed(() => {
-  if (!recyclingData.value?.firms || !selectedFirmaId.value) return null
-  return recyclingData.value.firms.find(f => f.id === selectedFirmaId.value)
+  if (!selectedFirmaId.value) return null
+  // First try allFirms (includes all firms with ranks)
+  const allFirms = recyclingData.value?.allFirms
+  if (allFirms && Array.isArray(allFirms)) {
+    return allFirms.find(f => f.id === selectedFirmaId.value)
+  }
+  // Fallback to top 10 firms
+  const firms = recyclingData.value?.firms
+  if (firms && Array.isArray(firms)) {
+    return firms.find(f => f.id === selectedFirmaId.value)
+  }
+  return null
 })
 
-// Recycling performance analysis
+// Recycling rank from the data (already computed in backend)
 const recyclingRank = computed(() => {
-  if (!recyclingData.value?.firms || !selectedFirmaId.value) return -1
-  return recyclingData.value.firms.findIndex(f => f.id === selectedFirmaId.value) + 1
+  const firm = selectedFirmRecycling.value
+  if (!firm) return -1
+  return firm.rank || -1
 })
 
 const recyclingPerformanceLabel = computed(() => {
-  if (recyclingRank.value === -1) return 'N/A'
-  if (recyclingRank.value <= 3) return 'Top 3'
-  if (recyclingRank.value <= 10) return 'Top 10'
-  return 'Orta'
+  const rank = recyclingRank.value
+  if (rank === -1) return 'N/A'
+  if (rank <= 3) return 'Top 3'
+  if (rank <= 10) return 'Top 10'
+  return `#${rank}`
 })
 
 const recyclingBadgeClass = computed(() => {
-  if (recyclingRank.value === -1) return 'bg-gray-600 text-gray-300'
-  if (recyclingRank.value <= 3) return 'bg-green-500/20 text-green-400'
-  if (recyclingRank.value <= 10) return 'bg-amber-500/20 text-amber-400'
+  const rank = recyclingRank.value
+  if (rank === -1) return 'bg-gray-600 text-gray-300'
+  if (rank <= 3) return 'bg-green-500/20 text-green-400'
+  if (rank <= 10) return 'bg-amber-500/20 text-amber-400'
   return 'bg-red-500/20 text-red-400'
 })
 
 const recyclingInsight = computed(() => {
   const firm = selectedFirmRecycling.value
-  if (!firm) return 'Veri yok'
-  return `${firm.geriDonusumOrani || 0}% geri dönüşüm oranı ile ${(firm.geriKazanilanAtik || 0).toFixed(1)} ton atık geri kazanılıyor.`
+  if (!firm) return 'Geri dönüşüm verisi bulunamadı'
+  const orani = firm.geriDonusumOrani || 0
+  const kazanilan = firm.geriKazanilanAtik || 0
+  return `${orani}% geri dönüşüm oranı ile ${kazanilan.toFixed(1)} ton atık geri kazanılıyor.`
 })
 
-// Budget analysis - NOW using tahmini_getiri as the base (NOT ciro)
+// Budget analysis - using tahmini_getiri as the base (NOT ciro)
 const tahminiGetiri = computed(() => {
   return kpis.value?.tahminiGetiri || 0
 })
 
 const budgetCeiling = computed(() => {
-  // Budget ceiling = tahmini_getiri * butce_yuzdesi (0.72)
   const yuzdesi = kpis.value?.butceYuzdesi || 0.72
   return tahminiGetiri.value * yuzdesi
 })
@@ -171,30 +185,53 @@ const budgetInsight = computed(() => {
   return `Tahmini getirinin %${pct}'i kadın girişimci bütçesine ayrılıyor (${formatMillionsTRY(alloc)}).`
 })
 
-// Sustainability ranking
+// Sustainability ranking - now use allFirms for complete lookup
+const selectedFirmSustainability = computed(() => {
+  if (!selectedFirmaId.value) return null
+  // First try allFirms (includes all firms with ranks)
+  const allFirms = sustainabilityData.value?.allFirms
+  if (allFirms && Array.isArray(allFirms)) {
+    return allFirms.find(f => f.id === selectedFirmaId.value)
+  }
+  // Fallback to top 7 firms
+  const firms = sustainabilityData.value?.firms
+  if (firms && Array.isArray(firms)) {
+    return firms.find(f => f.id === selectedFirmaId.value)
+  }
+  return null
+})
+
 const sustainabilityRank = computed(() => {
-  if (!sustainabilityData.value?.firms || !selectedFirmaId.value) return -1
-  return sustainabilityData.value.firms.findIndex(f => f.id === selectedFirmaId.value) + 1
+  const firm = selectedFirmSustainability.value
+  if (!firm) return -1
+  return firm.rank || -1
 })
 
 const sustainabilityRankLabel = computed(() => {
-  if (sustainabilityRank.value === -1) return 'Sırasız'
-  if (sustainabilityRank.value <= 3) return `#${sustainabilityRank.value}`
-  if (sustainabilityRank.value <= 7) return 'Top 7'
-  return 'Sırasız'
+  const rank = sustainabilityRank.value
+  if (rank === -1) return 'Sırasız'
+  if (rank <= 3) return `#${rank}`
+  if (rank <= 7) return `Top 7 (#${rank})`
+  return `Top 7 dışında (#${rank})`
 })
 
 const sustainabilityBadgeClass = computed(() => {
-  if (sustainabilityRank.value === -1) return 'bg-gray-600 text-gray-300'
-  if (sustainabilityRank.value <= 3) return 'bg-green-500/20 text-green-400'
-  return 'bg-amber-500/20 text-amber-400'
+  const rank = sustainabilityRank.value
+  if (rank === -1) return 'bg-gray-600 text-gray-300'
+  if (rank <= 3) return 'bg-green-500/20 text-green-400'
+  if (rank <= 7) return 'bg-amber-500/20 text-amber-400'
+  return 'bg-red-500/20 text-red-400'
 })
 
 const sustainabilityInsight = computed(() => {
-  if (sustainabilityRank.value === -1) return 'Sürdürülebilirlik puanı bulunamadı'
-  const firm = sustainabilityData.value?.firms?.find(f => f.id === selectedFirmaId.value)
-  const score = firm?.puan || 0
-  return `${score.toFixed(2)} puan ile Top 7 sıralamasında ${sustainabilityRank.value}. sırada.`
+  const firm = selectedFirmSustainability.value
+  if (!firm) return 'Sürdürülebilirlik puanı bulunamadı'
+  const score = firm.puan || 0
+  const rank = firm.rank || 0
+  if (rank <= 7) {
+    return `${score.toFixed(2)} puan ile sürdürülebilirlik sıralamasında #${rank}.`
+  }
+  return `${score.toFixed(2)} puan ile sıralamada #${rank} (Top 7 dışında).`
 })
 
 // Generate recommendations dynamically
@@ -205,13 +242,16 @@ const recommendations = computed(() => {
 
   // 1) Geri Dönüşüm Yatırımını Artır
   const firm = selectedFirmRecycling.value
-  if (firm && firm.geriDonusumOrani < 50 && firm.atikMiktari > 100) {
+  if (firm && (firm.geriDonusumOrani || 0) < 50 && (firm.atikMiktari || 0) > 100) {
+    const atik = firm.atikMiktari || 0
+    const oran = firm.geriDonusumOrani || 0
+    const kazanilan = firm.geriKazanilanAtik || 0
     recs.push({
       id: 'recycling',
       icon: '♻️',
       title: 'Geri Dönüşüm Yatırımını Artır',
-      priority: firm.geriDonusumOrani < 30 ? 'Yüksek' : 'Orta',
-      explanation: `${firm.atikMiktari.toLocaleString('tr-TR')} ton atık üretiliyor ancak sadece %${firm.geriDonusumOrani} geri dönüştürülüyor. Potansiyel ${((firm.atikMiktari * 0.7) - firm.geriKazanilanAtik).toFixed(0)} ton ek geri kazanım sağlanabilir.`,
+      priority: oran < 30 ? 'Yüksek' : 'Orta',
+      explanation: `${atik.toLocaleString('tr-TR')} ton atık üretiliyor ancak sadece %${oran} geri dönüştürülüyor. Potansiyel ${((atik * 0.7) - kazanilan).toFixed(0)} ton ek geri kazanım sağlanabilir.`,
       actions: [
         'Atık ayrıştırma sistemlerini modernize edin',
         'Geri dönüşüm tedarikçileriyle yeni anlaşmalar yapın',
@@ -221,7 +261,6 @@ const recommendations = computed(() => {
   }
 
   // 2) Kadın Girişimci Bütçesini Optimize Et
-  // NOW using tahmini_getiri as the reference (NOT ciro)
   const getiri = tahminiGetiri.value
   const alloc = budgetAllocation.value
   const ceiling = budgetCeiling.value
@@ -261,15 +300,16 @@ const recommendations = computed(() => {
   }
 
   // 4) Sürdürülebilirlik Puanını Artır
-  if (sustainabilityRank.value === -1 || sustainabilityRank.value > 5) {
+  const susRank = sustainabilityRank.value
+  if (susRank === -1 || susRank > 5) {
     recs.push({
       id: 'sustainability',
       icon: '🌱',
       title: 'Sürdürülebilirlik Puanını Artır',
-      priority: sustainabilityRank.value === -1 ? 'Yüksek' : 'Orta',
-      explanation: sustainabilityRank.value === -1 
+      priority: susRank === -1 ? 'Yüksek' : 'Orta',
+      explanation: susRank === -1 
         ? 'Firma henüz sürdürülebilirlik sıralamasında yer almıyor. Çevresel uyum puanını artırın.'
-        : `Mevcut sıralama: #${sustainabilityRank.value}. Top 3'e girmek için ek çevresel yatırımlar gerekli.`,
+        : `Mevcut sıralama: #${susRank}. Top 3'e girmek için ek çevresel yatırımlar gerekli.`,
       actions: [
         'Karbon ayak izi ölçümü ve raporlama sistemini kurun',
         'Yeşil enerji kaynaklarına geçiş planlayın',
