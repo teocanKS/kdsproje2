@@ -1,0 +1,25 @@
+{
+  "name": "kdsproje2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.47.7",
+    "chart.js": "4.4.7",
+    "nuxt": "3.13.2",
+    "vue": "3.5.13",
+    "vue-router": "4.5.0"
+  },
+  "devDependencies": {
+    "@nuxtjs/tailwindcss": "6.12.2"
+  },
+  "overrides": {
+    "nuxt": "3.13.2"
+  }
+}
