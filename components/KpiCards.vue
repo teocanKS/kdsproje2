@@ -35,15 +35,15 @@
 </template>
 
 <script setup>
-import { formatMillions } from '~/utils/formatting.js'
+import { formatMillionsTRY } from '~/utils/formatting.js'
 
 const { kpis, loading, errors } = useDashboard()
 
 const formattedGetiri = computed(() => {
-  return formatMillions(kpis.value.tahminiGetiri || 0)
+  return formatMillionsTRY(kpis.value.tahminiGetiri || 0)
 })
 
 const formattedButce = computed(() => {
-  return formatMillions(kpis.value.kadinGirisimciBütcesi || 0)
+  return formatMillionsTRY(kpis.value.kadinGirisimciBütcesi || 0)
 })
 </script>

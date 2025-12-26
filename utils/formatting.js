@@ -2,21 +2,38 @@
  * Shared formatting utilities for the KDS dashboard
  */
 
+// Maximum money value in TL (999M)
+const MAX_MONEY_TL = 999_000_000
+
+/**
+ * Clamp money value to max 999M TL
+ */
+export function clampMoney(value) {
+    if (value === null || value === undefined || isNaN(value)) return 0
+    return Math.min(Math.max(0, value), MAX_MONEY_TL)
+}
+
 /**
  * Format a number in millions with TRY symbol
+ * Capped at 999M TL maximum
  * Example: 12500000 -> "₺12.5M"
  */
+export function formatMillionsTRY(valueTL) {
+    if (valueTL === null || valueTL === undefined || isNaN(valueTL)) return '₺0M'
+
+    // Clamp to max 999M
+    const clamped = clampMoney(valueTL)
+    const millions = clamped / 1_000_000
+
+    return `₺${millions.toFixed(1)}M`
+}
+
+/**
+ * Legacy alias for formatMillionsTRY
+ * @deprecated Use formatMillionsTRY instead
+ */
 export function formatMillions(value) {
-    if (value === null || value === undefined || isNaN(value)) return '₺0'
-    const millions = value / 1_000_000
-    if (millions >= 1) {
-        return `₺${millions.toFixed(1)}M`
-    }
-    if (value >= 1000) {
-        const thousands = value / 1000
-        return `₺${thousands.toFixed(1)}K`
-    }
-    return `₺${value.toFixed(0)}`
+    return formatMillionsTRY(value)
 }
 
 /**
@@ -44,6 +61,31 @@ export function formatScore(value) {
 export function formatTons(value) {
     if (value === null || value === undefined || isNaN(value)) return '0 ton'
     return `${value.toLocaleString('tr-TR', { maximumFractionDigits: 1 })} ton`
+}
+
+/**
+ * Convert ratio to 0-1 scale
+ * Handles both 0-1 and 0-100 formats
+ * @param {number} x - Value that might be 0-1 or 0-100
+ * @returns {number} Value normalized to 0-1
+ */
+export function toRatio01(x) {
+    if (x === null || x === undefined || isNaN(x)) return 0
+    // If value is > 1.5, assume it's in 0-100 format
+    if (x > 1.5) return x / 100
+    return x
+}
+
+/**
+ * Convert ratio to percentage (0-100)
+ * @param {number} x - Value that might be 0-1 or 0-100  
+ * @returns {number} Value as percentage 0-100
+ */
+export function toPercent(x) {
+    if (x === null || x === undefined || isNaN(x)) return 0
+    // If value is <= 1.5, assume it's in 0-1 format
+    if (x <= 1.5) return x * 100
+    return x
 }
 
 /**

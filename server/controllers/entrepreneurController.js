@@ -1,37 +1,28 @@
 import { queryGirisimciler } from '../db/supabase.js'
 
 /**
+ * Normalize ratio to 0-1 scale
+ * Handles both 0-1 and 0-100 formats
+ */
+function toRatio01(x) {
+    if (x === null || x === undefined || isNaN(x)) return 0
+    if (x > 1.5) return x / 100
+    return x
+}
+
+/**
  * Controller: Get Top 10 entrepreneurs by parametric DSS scoring
  * 
  * This is the CORE DSS functionality - scenario simulation.
  * When parameters change, rankings change instantly.
  * 
- * Input Parameters (reference values for comparison):
- * - ref_kadin_orani: Target women employee ratio (0-100)
- * - ref_engelli_orani: Target disabled employee ratio (0-100)
- * - ref_min_kurulus_yili: Minimum establishment year
+ * NEW SCORING FORMULA (creates variation when sliders move):
  * 
- * Scoring Columns Used:
- * - kadin_calisan_orani
- * - engelli_calisan_orani
- * - kurulus_yili
+ * kadinScore = max(0, 1 - abs(kadin - refKadin) / max(refKadin, 0.01))
+ * engelliScore = max(0, 1 - abs(engelli - refEngelli) / max(refEngelli, 0.01))
+ * yearScore = kurulus_yili >= refMinYear ? 1 : max(0, 1 - (refMinYear - kurulus_yili) / 10)
  * 
- * NOT Used in Scoring (display only):
- * - isletme_adi (label)
- * - talep_edilen_butce
- * - durum
- * - olusturulma_tarihi
- * 
- * DSS Scoring Formula (normalized, max 1.0):
- * score = 
- *   (kadin >= ref_kadin ? 1 : kadin / ref_kadin) * 0.4
- * + (engelli >= ref_engelli ? 1 : engelli / ref_engelli) * 0.3
- * + (kurulus_yili >= ref_min_kurulus_yili ? 1 : 0) * 0.3
- * 
- * Decision Support Context:
- * - Helps managers evaluate entrepreneurs for investment/partnership
- * - Parametric sliders allow what-if scenario analysis
- * - Rankings update instantly for different strategy priorities
+ * finalScore = kadinScore * 0.4 + engelliScore * 0.3 + yearScore * 0.3
  */
 export async function getTop10Entrepreneurs(refKadin, refEngelli, refMinYil) {
     const girisimciler = await queryGirisimciler()
@@ -46,27 +37,46 @@ export async function getTop10Entrepreneurs(refKadin, refEngelli, refMinYil) {
         }
     }
 
-    // Apply DSS scoring algorithm
+    // Normalize reference values to 0-1 scale
+    const refKadinNorm = toRatio01(refKadin)
+    const refEngelliNorm = toRatio01(refEngelli)
+
+    // Apply DSS scoring algorithm with NEW formula
     const scored = girisimciler.map(g => {
         if (!g) return null
-        const kadinOrani = g.kadin_calisan_orani || 0
-        const engelliOrani = g.engelli_calisan_orani || 0
+
+        // Normalize DB values to 0-1 scale
+        const kadinOrani = toRatio01(g.kadin_calisan_orani)
+        const engelliOrani = toRatio01(g.engelli_calisan_orani)
         const kurulusYili = g.kurulus_yili || 0
 
-        // Score component 1: Women employee ratio (40% weight)
+        // NEW SCORING: Proximity-based (closer to ref = higher score)
+        // kadinScore = max(0, 1 - abs(kadin - refKadin) / max(refKadin, 0.01))
         let kadinScore = 0
-        if (refKadin > 0) {
-            kadinScore = kadinOrani >= refKadin ? 1 : kadinOrani / refKadin
+        if (refKadinNorm > 0.001) {
+            const diff = Math.abs(kadinOrani - refKadinNorm)
+            kadinScore = Math.max(0, 1 - diff / Math.max(refKadinNorm, 0.01))
+        } else {
+            // If ref is 0, score by how low the ratio is
+            kadinScore = 1 - kadinOrani
         }
 
-        // Score component 2: Disabled employee ratio (30% weight)
+        // engelliScore = max(0, 1 - abs(engelli - refEngelli) / max(refEngelli, 0.01))
         let engelliScore = 0
-        if (refEngelli > 0) {
-            engelliScore = engelliOrani >= refEngelli ? 1 : engelliOrani / refEngelli
+        if (refEngelliNorm > 0.001) {
+            const diff = Math.abs(engelliOrani - refEngelliNorm)
+            engelliScore = Math.max(0, 1 - diff / Math.max(refEngelliNorm, 0.01))
+        } else {
+            engelliScore = 1 - engelliOrani
         }
 
-        // Score component 3: Establishment year (30% weight)
-        const yilScore = kurulusYili >= refMinYil ? 1 : 0
+        // yearScore = kurulus_yili >= refMinYear ? 1 : max(0, 1 - (refMinYear - kurulus_yili) / 10)
+        let yilScore = 0
+        if (kurulusYili >= refMinYil) {
+            yilScore = 1
+        } else {
+            yilScore = Math.max(0, 1 - (refMinYil - kurulusYili) / 10)
+        }
 
         // Weighted total score
         const totalScore = (kadinScore * 0.4) + (engelliScore * 0.3) + (yilScore * 0.3)
@@ -74,8 +84,9 @@ export async function getTop10Entrepreneurs(refKadin, refEngelli, refMinYil) {
         return {
             id: g.id,
             isletmeAdi: g.isletme_adi || 'Bilinmeyen',
-            kadinOrani,
-            engelliOrani,
+            // Store as percentages for display
+            kadinOrani: (kadinOrani * 100).toFixed(1),
+            engelliOrani: (engelliOrani * 100).toFixed(1),
             kurulusYili,
             score: totalScore,
             scoreBreakdown: {

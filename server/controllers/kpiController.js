@@ -1,5 +1,16 @@
 import { queryFirmById, queryLatestTahminleme } from '../db/supabase.js'
 
+// Maximum money value in TL (999M)
+const MAX_MONEY_TL = 999_000_000
+
+/**
+ * Clamp money value to max 999M TL
+ */
+function clampMoney(value) {
+    if (value === null || value === undefined || isNaN(value)) return 0
+    return Math.min(Math.max(0, value), MAX_MONEY_TL)
+}
+
 /**
  * Controller: Get KPI data for selected firm
  * 
@@ -7,16 +18,15 @@ import { queryFirmById, queryLatestTahminleme } from '../db/supabase.js'
  * 1) Tahmini Getiri (M) - from firma_tahminleme.tahmini_getiri (latest record)
  * 2) Kadın Girişimci Bütçesi (M) - calculated as firmalar.ciro * 0.72
  * 
- * Decision Support Context:
- * - Tahmini Getiri helps managers forecast potential returns over 6-12 months
- * - Kadın Girişimci Bütçesi shows budget allocation aligned with diversity goals
+ * All money values capped at 999M TL
  */
 export async function getKpisForFirm(firmaId) {
     if (!firmaId) {
         return {
             tahminiGetiri: 0,
             kadinGirisimciBütcesi: 0,
-            firmaAdi: null
+            firmaAdi: null,
+            ciro: 0
         }
     }
 
@@ -32,7 +42,8 @@ export async function getKpisForFirm(firmaId) {
         return {
             tahminiGetiri: 0,
             kadinGirisimciBütcesi: 0,
-            firmaAdi: null
+            firmaAdi: null,
+            ciro: 0
         }
     }
 
@@ -41,22 +52,24 @@ export async function getKpisForFirm(firmaId) {
     try {
         const tahminleme = await queryLatestTahminleme(firmaId)
         if (tahminleme) {
-            tahminiGetiri = tahminleme.tahmini_getiri || 0
+            // Clamp to max 999M
+            tahminiGetiri = clampMoney(tahminleme.tahmini_getiri || 0)
         }
     } catch (e) {
-        // No tahminleme record exists for this firm
         console.error('[kpiController] Error fetching tahminleme:', e)
         tahminiGetiri = 0
     }
 
     // Calculate Kadın Girişimci Bütçesi
     // Formula: ciro * 0.72 (72% allocation for women entrepreneur support)
-    const ciro = firma.ciro || 0
-    const kadinGirisimciBütcesi = ciro * 0.72
+    // Clamp ciro and result to max 999M
+    const ciro = clampMoney(firma.ciro || 0)
+    const kadinGirisimciBütcesi = clampMoney(ciro * 0.72)
 
     return {
         tahminiGetiri,
         kadinGirisimciBütcesi,
-        firmaAdi: firma.ad || null
+        firmaAdi: firma.ad || null,
+        ciro
     }
 }

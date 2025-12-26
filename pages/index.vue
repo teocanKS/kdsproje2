@@ -62,6 +62,13 @@
         </ClientOnly>
       </section>
 
+      <!-- DSS Recommendations Section -->
+      <section class="mb-8">
+        <ClientOnly>
+          <DssRecommendations />
+        </ClientOnly>
+      </section>
+
       <!-- Footer Info -->
       <footer class="text-center py-8 border-t border-gray-700">
         <p class="text-sm text-gray-500">
