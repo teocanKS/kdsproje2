@@ -8,7 +8,7 @@
       v-model="selectedId"
       @change="handleChange"
       class="w-full bg-gray-800 border border-gray-600 text-white rounded-lg px-4 py-3 pr-10 focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200 appearance-none cursor-pointer hover:border-gray-500"
-      :disabled="loading"
+      :disabled="loading.firms"
     >
       <option :value="null">-- Tüm Firmalar --</option>
       <option 
@@ -24,14 +24,15 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
       </svg>
     </div>
-    <div v-if="loading" class="absolute inset-y-0 right-8 top-7 flex items-center">
+    <div v-if="loading.firms" class="absolute inset-y-0 right-8 top-7 flex items-center">
       <div class="animate-spin rounded-full h-4 w-4 border-2 border-primary-500 border-t-transparent"></div>
     </div>
+    <p v-if="errors.firms" class="text-red-400 text-xs mt-1">{{ errors.firms }}</p>
   </div>
 </template>
 
 <script setup>
-const { firms, selectedFirmaId, loading, selectFirm } = useDashboard()
+const { firms, selectedFirmaId, loading, errors, selectFirm } = useDashboard()
 
 const selectedId = ref(selectedFirmaId.value)
 

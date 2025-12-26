@@ -36,8 +36,19 @@ import { queryGirisimciler } from '../db/supabase.js'
 export async function getTop10Entrepreneurs(refKadin, refEngelli, refMinYil) {
     const girisimciler = await queryGirisimciler()
 
+    // Handle empty or null data
+    if (!girisimciler || !Array.isArray(girisimciler)) {
+        return {
+            labels: [],
+            values: [],
+            girisimciler: [],
+            parameters: { refKadin, refEngelli, refMinYil }
+        }
+    }
+
     // Apply DSS scoring algorithm
     const scored = girisimciler.map(g => {
+        if (!g) return null
         const kadinOrani = g.kadin_calisan_orani || 0
         const engelliOrani = g.engelli_calisan_orani || 0
         const kurulusYili = g.kurulus_yili || 0
@@ -62,7 +73,7 @@ export async function getTop10Entrepreneurs(refKadin, refEngelli, refMinYil) {
 
         return {
             id: g.id,
-            isletmeAdi: g.isletme_adi,
+            isletmeAdi: g.isletme_adi || 'Bilinmeyen',
             kadinOrani,
             engelliOrani,
             kurulusYili,
@@ -73,7 +84,7 @@ export async function getTop10Entrepreneurs(refKadin, refEngelli, refMinYil) {
                 yilScore: yilScore * 0.3
             }
         }
-    })
+    }).filter(g => g !== null)
 
     // Sort by score descending and take top 10
     const sorted = scored

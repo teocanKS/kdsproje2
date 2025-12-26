@@ -4,6 +4,7 @@ import { getKpisForFirm } from '../../controllers/kpiController.js'
  * API Route: GET /api/dashboard/kpis
  * Query params: firma_id (optional)
  * Returns KPI values for selected firm
+ * Response: { ok: true, data: { tahminiGetiri, kadinGirisimciBütcesi, firmaAdi } }
  */
 export default defineEventHandler(async (event) => {
     try {
@@ -12,23 +13,24 @@ export default defineEventHandler(async (event) => {
 
         // Validate firma_id if provided
         if (query.firma_id && (isNaN(firmaId) || firmaId <= 0)) {
-            throw createError({
-                statusCode: 400,
-                statusMessage: 'Geçersiz firma ID'
-            })
+            return {
+                ok: false,
+                error: 'Geçersiz firma ID',
+                where: '/api/dashboard/kpis'
+            }
         }
 
         const kpis = await getKpisForFirm(firmaId)
         return {
-            success: true,
-            data: kpis
+            ok: true,
+            data: kpis || { tahminiGetiri: 0, kadinGirisimciBütcesi: 0, firmaAdi: null }
         }
     } catch (error) {
-        console.error('Error fetching KPIs:', error)
-        if (error.statusCode) throw error
-        throw createError({
-            statusCode: 500,
-            statusMessage: 'KPI verileri yüklenirken hata oluştu'
-        })
+        console.error('[/api/dashboard/kpis] Error:', error)
+        return {
+            ok: false,
+            error: error.message || 'KPI verileri yüklenirken hata oluştu',
+            where: '/api/dashboard/kpis'
+        }
     }
 })

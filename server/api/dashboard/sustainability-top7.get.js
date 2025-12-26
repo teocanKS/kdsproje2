@@ -3,19 +3,21 @@ import { getTop7Sustainability } from '../../controllers/sustainabilityControlle
 /**
  * API Route: GET /api/dashboard/sustainability-top7
  * Returns Top 7 firms by sustainability compliance score
+ * Response: { ok: true, data: { labels, values, firms } }
  */
 export default defineEventHandler(async (event) => {
     try {
         const data = await getTop7Sustainability()
         return {
-            success: true,
-            data
+            ok: true,
+            data: data || { labels: [], values: [], firms: [] }
         }
     } catch (error) {
-        console.error('Error fetching sustainability data:', error)
-        throw createError({
-            statusCode: 500,
-            statusMessage: 'Sürdürülebilirlik verileri yüklenirken hata oluştu'
-        })
+        console.error('[/api/dashboard/sustainability-top7] Error:', error)
+        return {
+            ok: false,
+            error: error.message || 'Sürdürülebilirlik verileri yüklenirken hata oluştu',
+            where: '/api/dashboard/sustainability-top7'
+        }
     }
 })

@@ -8,6 +8,7 @@ import { getTop10Entrepreneurs } from '../../controllers/entrepreneurController.
  *   - ref_min_yil: Minimum establishment year (default: 2015)
  * 
  * This is the parametric DSS endpoint - when parameters change, rankings change.
+ * Response: { ok: true, data: { labels, values, girisimciler, parameters } }
  */
 export default defineEventHandler(async (event) => {
     try {
@@ -20,37 +21,40 @@ export default defineEventHandler(async (event) => {
 
         // Validate ranges
         if (refKadin < 0 || refKadin > 100) {
-            throw createError({
-                statusCode: 400,
-                statusMessage: 'ref_kadin değeri 0-100 arasında olmalıdır'
-            })
+            return {
+                ok: false,
+                error: 'ref_kadin değeri 0-100 arasında olmalıdır',
+                where: '/api/dashboard/entrepreneur-top10'
+            }
         }
 
         if (refEngelli < 0 || refEngelli > 100) {
-            throw createError({
-                statusCode: 400,
-                statusMessage: 'ref_engelli değeri 0-100 arasında olmalıdır'
-            })
+            return {
+                ok: false,
+                error: 'ref_engelli değeri 0-100 arasında olmalıdır',
+                where: '/api/dashboard/entrepreneur-top10'
+            }
         }
 
         if (refMinYil < 1900 || refMinYil > new Date().getFullYear()) {
-            throw createError({
-                statusCode: 400,
-                statusMessage: 'ref_min_yil geçersiz değer'
-            })
+            return {
+                ok: false,
+                error: 'ref_min_yil geçersiz değer',
+                where: '/api/dashboard/entrepreneur-top10'
+            }
         }
 
         const data = await getTop10Entrepreneurs(refKadin, refEngelli, refMinYil)
         return {
-            success: true,
-            data
+            ok: true,
+            data: data || { labels: [], values: [], girisimciler: [], parameters: { refKadin, refEngelli, refMinYil } }
         }
     } catch (error) {
-        console.error('Error fetching entrepreneur data:', error)
-        if (error.statusCode) throw error
-        throw createError({
-            statusCode: 500,
-            statusMessage: 'Girişimci verileri yüklenirken hata oluştu'
-        })
+        console.error('[/api/dashboard/entrepreneur-top10] Error:', error)
+        return {
+            ok: false,
+            error: error.message || 'Girişimci verileri yüklenirken hata oluştu',
+            where: '/api/dashboard/entrepreneur-top10'
+        }
     }
 })

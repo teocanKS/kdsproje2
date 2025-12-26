@@ -24,6 +24,15 @@ export function useDashboard() {
         entrepreneur: false
     }))
 
+    // Error states
+    const errors = useState('dashboardErrors', () => ({
+        firms: null,
+        kpis: null,
+        sustainability: null,
+        recycling: null,
+        entrepreneur: null
+    }))
+
     // Data states
     const firms = useState('firms', () => [])
     const kpis = useState('kpis', () => ({
@@ -38,13 +47,18 @@ export function useDashboard() {
     // Fetch firms for dropdown
     async function fetchFirms() {
         loading.value.firms = true
+        errors.value.firms = null
         try {
             const response = await $fetch('/api/firms')
-            if (response.success) {
-                firms.value = response.data
+            if (response.ok) {
+                firms.value = response.data || []
+            } else {
+                errors.value.firms = response.error || 'Firmalar yüklenemedi'
+                console.error('[fetchFirms] API error:', response.error)
             }
         } catch (error) {
-            console.error('Error fetching firms:', error)
+            errors.value.firms = error.message || 'Firmalar yüklenirken bağlantı hatası'
+            console.error('[fetchFirms] Error:', error)
         } finally {
             loading.value.firms = false
         }
@@ -53,16 +67,21 @@ export function useDashboard() {
     // Fetch KPIs for selected firm
     async function fetchKpis() {
         loading.value.kpis = true
+        errors.value.kpis = null
         try {
             const url = selectedFirmaId.value
                 ? `/api/dashboard/kpis?firma_id=${selectedFirmaId.value}`
                 : '/api/dashboard/kpis'
             const response = await $fetch(url)
-            if (response.success) {
-                kpis.value = response.data
+            if (response.ok) {
+                kpis.value = response.data || { tahminiGetiri: 0, kadinGirisimciBütcesi: 0, firmaAdi: null }
+            } else {
+                errors.value.kpis = response.error || 'KPI verileri yüklenemedi'
+                console.error('[fetchKpis] API error:', response.error)
             }
         } catch (error) {
-            console.error('Error fetching KPIs:', error)
+            errors.value.kpis = error.message || 'KPI verileri yüklenirken bağlantı hatası'
+            console.error('[fetchKpis] Error:', error)
         } finally {
             loading.value.kpis = false
         }
@@ -71,13 +90,20 @@ export function useDashboard() {
     // Fetch sustainability Top 7 data
     async function fetchSustainability() {
         loading.value.sustainability = true
+        errors.value.sustainability = null
         try {
             const response = await $fetch('/api/dashboard/sustainability-top7')
-            if (response.success) {
-                sustainabilityData.value = response.data
+            if (response.ok) {
+                sustainabilityData.value = response.data || { labels: [], values: [], firms: [] }
+            } else {
+                errors.value.sustainability = response.error || 'Sürdürülebilirlik verileri yüklenemedi'
+                sustainabilityData.value = { labels: [], values: [], firms: [] }
+                console.error('[fetchSustainability] API error:', response.error)
             }
         } catch (error) {
-            console.error('Error fetching sustainability data:', error)
+            errors.value.sustainability = error.message || 'Sürdürülebilirlik verileri yüklenirken bağlantı hatası'
+            sustainabilityData.value = { labels: [], values: [], firms: [] }
+            console.error('[fetchSustainability] Error:', error)
         } finally {
             loading.value.sustainability = false
         }
@@ -86,13 +112,20 @@ export function useDashboard() {
     // Fetch recycling Top 10 data
     async function fetchRecycling() {
         loading.value.recycling = true
+        errors.value.recycling = null
         try {
             const response = await $fetch('/api/dashboard/recycling-top10')
-            if (response.success) {
-                recyclingData.value = response.data
+            if (response.ok) {
+                recyclingData.value = response.data || { labels: [], values: [], firms: [] }
+            } else {
+                errors.value.recycling = response.error || 'Geri dönüşüm verileri yüklenemedi'
+                recyclingData.value = { labels: [], values: [], firms: [] }
+                console.error('[fetchRecycling] API error:', response.error)
             }
         } catch (error) {
-            console.error('Error fetching recycling data:', error)
+            errors.value.recycling = error.message || 'Geri dönüşüm verileri yüklenirken bağlantı hatası'
+            recyclingData.value = { labels: [], values: [], firms: [] }
+            console.error('[fetchRecycling] Error:', error)
         } finally {
             loading.value.recycling = false
         }
@@ -101,6 +134,7 @@ export function useDashboard() {
     // Fetch entrepreneur Top 10 data with DSS parameters
     async function fetchEntrepreneurs() {
         loading.value.entrepreneur = true
+        errors.value.entrepreneur = null
         try {
             const params = new URLSearchParams({
                 ref_kadin: dssParams.value.refKadin.toString(),
@@ -108,11 +142,17 @@ export function useDashboard() {
                 ref_min_yil: dssParams.value.refMinYil.toString()
             })
             const response = await $fetch(`/api/dashboard/entrepreneur-top10?${params}`)
-            if (response.success) {
-                entrepreneurData.value = response.data
+            if (response.ok) {
+                entrepreneurData.value = response.data || { labels: [], values: [], girisimciler: [], parameters: {} }
+            } else {
+                errors.value.entrepreneur = response.error || 'Girişimci verileri yüklenemedi'
+                entrepreneurData.value = { labels: [], values: [], girisimciler: [], parameters: {} }
+                console.error('[fetchEntrepreneurs] API error:', response.error)
             }
         } catch (error) {
-            console.error('Error fetching entrepreneur data:', error)
+            errors.value.entrepreneur = error.message || 'Girişimci verileri yüklenirken bağlantı hatası'
+            entrepreneurData.value = { labels: [], values: [], girisimciler: [], parameters: {} }
+            console.error('[fetchEntrepreneurs] Error:', error)
         } finally {
             loading.value.entrepreneur = false
         }
@@ -146,6 +186,7 @@ export function useDashboard() {
         selectedFirmaId,
         dssParams,
         loading,
+        errors,
         firms,
         kpis,
         sustainabilityData,

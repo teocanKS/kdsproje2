@@ -71,13 +71,21 @@
     
     <!-- Chart -->
     <div class="relative" style="height: 350px;">
-      <div v-if="loading" class="absolute inset-0 flex items-center justify-center">
+      <div v-if="loading.entrepreneur" class="absolute inset-0 flex items-center justify-center">
         <div class="animate-spin rounded-full h-12 w-12 border-4 border-accent-500 border-t-transparent"></div>
+      </div>
+      <div v-else-if="errors.entrepreneur" class="absolute inset-0 flex items-center justify-center">
+        <div class="text-center">
+          <svg class="w-12 h-12 mx-auto text-red-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <p class="text-red-400 text-sm">{{ errors.entrepreneur }}</p>
+        </div>
       </div>
       <div v-else-if="!hasData" class="absolute inset-0 flex items-center justify-center text-gray-500">
         Veri bulunamadı
       </div>
-      <canvas ref="chartCanvas" v-show="hasData && !loading"></canvas>
+      <canvas ref="chartCanvas" v-show="hasData && !loading.entrepreneur && !errors.entrepreneur"></canvas>
     </div>
     
     <p class="text-xs text-gray-500 mt-4">
@@ -93,7 +101,7 @@ import { chartColors } from '~/utils/formatting.js'
 // Register Chart.js components
 Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip, Legend)
 
-const { entrepreneurData, loading, dssParams, updateDssParams } = useDashboard()
+const { entrepreneurData, loading, errors, dssParams, updateDssParams } = useDashboard()
 
 const chartCanvas = ref(null)
 let chartInstance = null
@@ -133,6 +141,7 @@ function createChart() {
   }
   
   const ctx = chartCanvas.value.getContext('2d')
+  const values = entrepreneurData.value.values || []
   
   chartInstance = new Chart(ctx, {
     type: 'bar',
@@ -140,14 +149,14 @@ function createChart() {
       labels: entrepreneurData.value.labels,
       datasets: [{
         label: 'Uyumluluk Skoru',
-        data: entrepreneurData.value.values,
-        backgroundColor: entrepreneurData.value.values.map((v, i) => {
+        data: values,
+        backgroundColor: values.map((v) => {
           // Gradient effect based on score
           if (v >= 0.8) return 'rgba(16, 185, 129, 0.8)'
           if (v >= 0.5) return 'rgba(245, 158, 11, 0.8)'
           return 'rgba(239, 68, 68, 0.8)'
         }),
-        borderColor: entrepreneurData.value.values.map((v, i) => {
+        borderColor: values.map((v) => {
           if (v >= 0.8) return 'rgba(16, 185, 129, 1)'
           if (v >= 0.5) return 'rgba(245, 158, 11, 1)'
           return 'rgba(239, 68, 68, 1)'
@@ -174,12 +183,13 @@ function createChart() {
           callbacks: {
             label: function(context) {
               const index = context.dataIndex
-              const g = entrepreneurData.value.girisimciler[index]
+              const g = entrepreneurData.value.girisimciler?.[index]
+              if (!g) return []
               return [
-                `Toplam Skor: ${g.score.toFixed(3)}`,
-                `Kadın Oranı: %${g.kadinOrani}`,
-                `Engelli Oranı: %${g.engelliOrani}`,
-                `Kuruluş Yılı: ${g.kurulusYili}`
+                `Toplam Skor: ${(g.score || 0).toFixed(3)}`,
+                `Kadın Oranı: %${g.kadinOrani || 0}`,
+                `Engelli Oranı: %${g.engelliOrani || 0}`,
+                `Kuruluş Yılı: ${g.kurulusYili || 'N/A'}`
               ]
             }
           }

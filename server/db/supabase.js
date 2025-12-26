@@ -12,7 +12,7 @@ export function getSupabase() {
     const supabaseAnonKey = config.supabaseAnonKey
 
     if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Supabase credentials are not configured')
+        throw new Error('Missing SUPABASE_URL or SUPABASE_ANON_KEY')
     }
 
     supabaseInstance = createClient(supabaseUrl, supabaseAnonKey)
@@ -28,7 +28,7 @@ export async function queryFirms() {
         .order('ad', { ascending: true })
 
     if (error) throw error
-    return data
+    return data || []
 }
 
 // Query helper: Get firm details by ID
@@ -40,8 +40,8 @@ export async function queryFirmById(firmaId) {
         .eq('id', firmaId)
         .single()
 
-    if (error) throw error
-    return data
+    if (error && error.code !== 'PGRST116') throw error
+    return data || null
 }
 
 // Query helper: Get latest tahminleme for a firm
@@ -56,7 +56,7 @@ export async function queryLatestTahminleme(firmaId) {
         .single()
 
     if (error && error.code !== 'PGRST116') throw error
-    return data
+    return data || null
 }
 
 // Query helper: Get all firms with their latest tahminleme
@@ -69,6 +69,7 @@ export async function queryFirmsWithLatestTahminleme() {
         .select('id, ad')
 
     if (firmalarError) throw firmalarError
+    if (!firmalar || firmalar.length === 0) return []
 
     // Then get all tahminleme records
     const { data: tahminlemeler, error: tahminError } = await supabase
@@ -80,9 +81,11 @@ export async function queryFirmsWithLatestTahminleme() {
 
     // Group by firma_id and get only the latest for each
     const latestByFirma = {}
-    for (const t of tahminlemeler) {
-        if (!latestByFirma[t.firma_id]) {
-            latestByFirma[t.firma_id] = t
+    if (tahminlemeler && Array.isArray(tahminlemeler)) {
+        for (const t of tahminlemeler) {
+            if (t && t.firma_id && !latestByFirma[t.firma_id]) {
+                latestByFirma[t.firma_id] = t
+            }
         }
     }
 
@@ -100,7 +103,7 @@ export async function queryFirmsWithRecycling() {
         .select('id, ad, atik_miktari, geri_donusum_orani')
 
     if (error) throw error
-    return data
+    return data || []
 }
 
 // Query helper: Get all entrepreneurs
@@ -111,5 +114,5 @@ export async function queryGirisimciler() {
         .select('id, isletme_adi, kadin_calisan_orani, engelli_calisan_orani, kurulus_yili')
 
     if (error) throw error
-    return data
+    return data || []
 }

@@ -21,9 +21,19 @@ export async function getKpisForFirm(firmaId) {
     }
 
     // Fetch firm details
-    const firma = await queryFirmById(firmaId)
+    let firma = null
+    try {
+        firma = await queryFirmById(firmaId)
+    } catch (e) {
+        console.error('[kpiController] Error fetching firm:', e)
+    }
+
     if (!firma) {
-        throw new Error('Firma bulunamadı')
+        return {
+            tahminiGetiri: 0,
+            kadinGirisimciBütcesi: 0,
+            firmaAdi: null
+        }
     }
 
     // Fetch latest tahminleme record
@@ -35,6 +45,7 @@ export async function getKpisForFirm(firmaId) {
         }
     } catch (e) {
         // No tahminleme record exists for this firm
+        console.error('[kpiController] Error fetching tahminleme:', e)
         tahminiGetiri = 0
     }
 
@@ -46,6 +57,6 @@ export async function getKpisForFirm(firmaId) {
     return {
         tahminiGetiri,
         kadinGirisimciBütcesi,
-        firmaAdi: firma.ad
+        firmaAdi: firma.ad || null
     }
 }

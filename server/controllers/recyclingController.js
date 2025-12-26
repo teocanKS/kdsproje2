@@ -18,20 +18,26 @@ import { queryFirmsWithRecycling } from '../db/supabase.js'
 export async function getTop10Recycling() {
     const firms = await queryFirmsWithRecycling()
 
+    // Handle empty or null data
+    if (!firms || !Array.isArray(firms)) {
+        return { labels: [], values: [], firms: [] }
+    }
+
     // Calculate recovered waste for each firm
     const firmsWithCalc = firms.map(f => {
+        if (!f) return null
         const atikMiktari = f.atik_miktari || 0
         const geriDonusumOrani = f.geri_donusum_orani || 0
         const geriKazanilanAtik = atikMiktari * (geriDonusumOrani / 100)
 
         return {
             id: f.id,
-            ad: f.ad,
+            ad: f.ad || 'Bilinmeyen',
             atikMiktari,
             geriDonusumOrani,
             geriKazanilanAtik
         }
-    })
+    }).filter(f => f !== null)
 
     // Sort by recovered waste descending and take top 10
     const sorted = firmsWithCalc
