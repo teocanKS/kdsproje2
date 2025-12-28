@@ -21,7 +21,8 @@ export function useDashboard() {
         kpis: false,
         sustainability: false,
         recycling: false,
-        entrepreneur: false
+        entrepreneur: false,
+        allReturns: false
     }))
 
     // Error states
@@ -30,7 +31,8 @@ export function useDashboard() {
         kpis: null,
         sustainability: null,
         recycling: null,
-        entrepreneur: null
+        entrepreneur: null,
+        allReturns: null
     }))
 
     // Data states
@@ -43,6 +45,7 @@ export function useDashboard() {
     const sustainabilityData = useState('sustainabilityData', () => null)
     const recyclingData = useState('recyclingData', () => null)
     const entrepreneurData = useState('entrepreneurData', () => null)
+    const allReturnsData = useState('allReturnsData', () => null)
 
     // Fetch firms for dropdown
     async function fetchFirms() {
@@ -84,6 +87,28 @@ export function useDashboard() {
             console.error('[fetchKpis] Error:', error)
         } finally {
             loading.value.kpis = false
+        }
+    }
+
+    // Fetch all firms returns for line charts
+    async function fetchAllReturns() {
+        loading.value.allReturns = true
+        errors.value.allReturns = null
+        try {
+            const response = await $fetch('/api/dashboard/all-returns')
+            if (response.ok) {
+                allReturnsData.value = response.data || { firms: [], butceYuzdesi: 0.72 }
+            } else {
+                errors.value.allReturns = response.error || 'Getiri verileri yüklenemedi'
+                allReturnsData.value = { firms: [], butceYuzdesi: 0.72 }
+                console.error('[fetchAllReturns] API error:', response.error)
+            }
+        } catch (error) {
+            errors.value.allReturns = error.message || 'Getiri verileri yüklenirken bağlantı hatası'
+            allReturnsData.value = { firms: [], butceYuzdesi: 0.72 }
+            console.error('[fetchAllReturns] Error:', error)
+        } finally {
+            loading.value.allReturns = false
         }
     }
 
@@ -163,6 +188,7 @@ export function useDashboard() {
         await Promise.all([
             fetchFirms(),
             fetchKpis(),
+            fetchAllReturns(),
             fetchSustainability(),
             fetchRecycling(),
             fetchEntrepreneurs()
@@ -192,10 +218,12 @@ export function useDashboard() {
         sustainabilityData,
         recyclingData,
         entrepreneurData,
+        allReturnsData,
 
         // Actions
         fetchFirms,
         fetchKpis,
+        fetchAllReturns,
         fetchSustainability,
         fetchRecycling,
         fetchEntrepreneurs,

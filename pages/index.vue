@@ -26,19 +26,16 @@
 
     <!-- Main Content -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- Firm Selector Section -->
-      <section class="mb-8">
-        <div class="max-w-xs">
-          <ClientOnly>
-            <FirmSelector />
-          </ClientOnly>
-        </div>
-      </section>
-
-      <!-- KPI Cards Section -->
-      <section class="mb-8">
+      <!-- Line Charts Grid (Replace KPI Cards) -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <!-- Estimated Return Line Chart -->
         <ClientOnly>
-          <KpiCards />
+          <EstimatedReturnChart />
+        </ClientOnly>
+
+        <!-- Female Budget Line Chart -->
+        <ClientOnly>
+          <FemaleBudgetChart />
         </ClientOnly>
       </section>
 
@@ -60,6 +57,15 @@
         <ClientOnly>
           <EntrepreneurChart />
         </ClientOnly>
+      </section>
+
+      <!-- Firm Selector (now above DSS Recommendations) -->
+      <section class="mb-4">
+        <div class="max-w-xs">
+          <ClientOnly>
+            <FirmSelector />
+          </ClientOnly>
+        </div>
       </section>
 
       <!-- DSS Recommendations Section -->
