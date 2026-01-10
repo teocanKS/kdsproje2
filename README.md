@@ -1,141 +1,109 @@
-# KDS - Karar Destek Sistemi
+# KDS Ağ Olayları Analiz Sistemi
 
-Sürdürülebilirlik odaklı karar destek sistemi. Orta kademe yöneticiler için 6-12 aylık stratejik planlama aracı.
+## Proje Açıklaması
 
-## Özellikler
+Bu proje, Kurumsal Dijital Sistemler (KDS) dersi kapsamında geliştirilmiş, ağ olaylarının analiz edilmesi ve karar destek çıktıları üretilmesini amaçlayan sunucu taraflı bir yazılım projesidir. Sistem, ağ üzerinde oluşan olayları analiz ederek istatistiksel veriler, risk seviyeleri ve stratejik öngörüler üretir.
 
-- **Firma Seçimi**: Dropdown ile firma seçimi ve KPI görüntüleme
-- **KPI Kartları**: Tahmini getiri ve kadın girişimci bütçesi
-- **Grafikler**: Chart.js ile görselleştirme
-- **DSS Parametreleri**: Senaryo simülasyonu için slider kontrolleri
+Uygulama, MVC (Model-View-Controller) mimarisine uygun olarak tasarlanmış olup REST prensiplerine uygun API uç noktaları içermektedir. Kod yapısı okunabilirlik, sürdürülebilirlik ve genişletilebilirlik esas alınarak geliştirilmiştir.
 
-## Teknoloji Stack
+---
 
-- **Framework**: Nuxt 3 (JavaScript)
-- **Styling**: TailwindCSS
-- **Charts**: Vanilla Chart.js
-- **Database**: Supabase (PostgreSQL)
-- **Deployment**: Vercel
+## Senaryo Tanımı
+
+Kurumsal bir ağ altyapısında farklı türlerde ağ olayları (DDoS saldırıları, anormal trafik yoğunluğu, riskli aktiviteler vb.) meydana gelmektedir. Bu olaylar manuel olarak takip edilmekte ve karar alma süreçlerinde gecikmelere yol açmaktadır.
+
+Bu proje kapsamında geliştirilen sistem, ağ olaylarını analiz ederek:
+
+* Güncel olay istatistiklerini üretir
+* Uzun vadeli trend analizleri yapar
+* Stratejik karar destek verileri sunar
+
+Amaç, yöneticilerin ağ güvenliği ve operasyonel riskler hakkında daha hızlı ve doğru kararlar alabilmesini sağlamaktır.
+
+---
 
 ## Kurulum
 
+Bu proje Node.js tabanlı bir sunucu uygulamasıdır.
+
 ### Gereksinimler
 
-- Node.js 18+
-- npm veya yarn
+* Node.js (v18 veya üzeri)
+* npm
 
-### Yerel Çalıştırma
+### Kurulum Adımları
+
+1. Projeyi klonlayın:
 
 ```bash
-# Bağımlılıkları yükle
+git clone https://github.com/teocanKS/kdsagolayproje.git
+cd kdsagolayproje
+```
+
+2. Bağımlılıkları yükleyin:
+
+```bash
 npm install
-
-# Geliştirme sunucusunu başlat
-npm run dev
 ```
 
-Uygulama `http://localhost:3000` adresinde çalışacaktır.
+3. Ortam değişkenlerini ayarlayın:
 
-### Environment Variables
-
-Proje `.env` dosyası içermektedir. Supabase bağlantısı için gerekli değişkenler:
-
-- `SUPABASE_URL`: Supabase proje URL'si
-- `SUPABASE_ANON_KEY`: Supabase anon/public key
-
-## MVC Klasör Yapısı
-
-```
-/server
-  /controllers   -> İş mantığı + DSS hesaplamaları
-  /db            -> Supabase client + query helpers
-  /middlewares   -> Server middleware (opsiyonel)
-/server/api      -> Thin route handlers (validasyon + response)
-/utils           -> Paylaşılan yardımcılar
-/pages           -> Tek sayfa dashboard
-/components      -> UI + Chart bileşenleri
-/composables     -> State yönetimi + data fetching
-```
-
-## API Endpoints
-
-| Endpoint | Açıklama |
-|----------|----------|
-| `GET /api/firms` | Firma listesi (dropdown için) |
-| `GET /api/dashboard/kpis?firma_id=X` | Seçili firma KPI'ları |
-| `GET /api/dashboard/sustainability-top7` | Top 7 sürdürülebilirlik puanı |
-| `GET /api/dashboard/recycling-top10` | Top 10 geri dönüşüm oranı |
-| `GET /api/dashboard/entrepreneur-top10?ref_kadin=X&ref_engelli=Y&ref_min_yil=Z` | DSS parametrik sıralama |
-
-## DSS Parametreleri ve Karar Desteği
-
-### Girişimci Uyumluluk Skoru
-
-Parametreler değiştiğinde sıralama anında güncellenir:
-
-```
-score = 
-  (kadın_oranı >= ref_kadın ? 1 : kadın_oranı / ref_kadın) × 0.4
-+ (engelli_oranı >= ref_engelli ? 1 : engelli_oranı / ref_engelli) × 0.3
-+ (kuruluş_yılı >= ref_min_yıl ? 1 : 0) × 0.3
-```
-
-### Slider Kontrolleri
-
-| Parametre | Aralık | Varsayılan | Açıklama |
-|-----------|--------|------------|----------|
-| Ref. Kadın Oranı | 0-100% | 30% | Hedef kadın çalışan oranı |
-| Ref. Engelli Oranı | 0-50% | 5% | Hedef engelli çalışan oranı |
-| Min. Kuruluş Yılı | 2000-2024 | 2015 | Minimum kabul edilen kuruluş yılı |
-
-## KPI'lar ve Desteklenen Kararlar
-
-### 1. Tahmini Getiri (M)
-- **Kaynak**: `firma_tahminleme.tahmini_getiri`
-- **Karar Desteği**: 6-12 aylık yatırım getirisini öngörme
-- **Kullanım**: Portfolio optimizasyonu
-
-### 2. Kadın Girişimci Bütçesi (M)
-- **Formül**: `ciro × 0.72`
-- **Karar Desteği**: Çeşitlilik hedeflerine uygun bütçe planlama
-- **Kullanım**: Sosyal sorumluluk stratejisi
-
-### 3. Sürdürülebilirlik Uyum Puanı (Top 7)
-- **Kaynak**: `firma_tahminleme.surdurulebilirlik_uyum_puani`
-- **Karar Desteği**: Çevresel kriterlere en uyumlu firmaları belirleme
-- **Kullanım**: Yeşil yatırım kararları
-
-### 4. Atık Geri Dönüşüm Oranı (Top 10)
-- **Formül**: `atik_miktari × (geri_donusum_orani / 100)`
-- **Karar Desteği**: Döngüsel ekonomi performansını ölçme
-- **Kullanım**: Kaynak verimliliği değerlendirmesi
-
-### 5. Girişimci Uyumluluk Analizi (Top 10)
-- **Parametrik DSS**: Slider değişikliklerinde anında yeniden hesaplama
-- **Karar Desteği**: Farklı stratejik önceliklere göre girişimci değerlendirme
-- **Kullanım**: Yatırım/ortaklık kararları için senaryo analizi
-
-## Deployment
-
-### Vercel
-
-1. GitHub'a push yapın
-2. Vercel'de projeyi import edin
-3. Environment variables ekleyin
-4. Deploy
+* Proje dizininde bulunan `.env.example` dosyasını kopyalayarak `.env` dosyasını oluşturun.
 
 ```bash
-# Vercel CLI ile deployment
-npx vercel --prod
+cp .env.example .env
 ```
 
-## Geliştirici Notları
+* `.env` dosyası içerisine kendi veritabanı ve port bilgilerinizi girin.
 
-- Tüm grafikler client-side render edilir (`<ClientOnly>`)
-- Chart.js instance'ları düzgün şekilde destroy edilir (memory leak önleme)
-- DSS parametreleri debounce ile güncellenir (300ms)
-- API route'ları thin handler pattern'i kullanır
+4. Uygulamayı başlatın:
 
-## Lisans
+```bash
+npm start
+```
 
-Bu proje eğitim amaçlıdır.
+Uygulama varsayılan olarak aşağıdaki adres üzerinden çalışır:
+
+```
+http://localhost:PORT
+```
+
+`PORT` değeri `.env` dosyasında tanımlıdır.
+
+---
+
+## API Endpoint Listesi
+
+| Endpoint                  | Metod | Açıklama                                     |
+| ------------------------- | ----- | -------------------------------------------- |
+| `/api/events`             | GET   | Ağ olaylarını listeler                       |
+| `/api/stats`              | GET   | Son 30 güne ait istatistikleri döner         |
+| `/api/strategic-insights` | GET   | Stratejik karar destek çıktıları üretir      |
+| `/api/long-term-stats`    | GET   | Uzun vadeli (12 ay) trend analizlerini döner |
+
+---
+
+## İş Kuralları (Özel Senaryolar)
+
+1. **Eksik veri ile analiz yapılamaz**
+   Zorunlu alanlar eksik gönderildiğinde sistem analiz üretmez.
+
+* HTTP Status: `400`
+* Mesaj: `Zorunlu alanlar eksik`
+
+2. **Kritik seviyedeki bir olay düşük risk olarak değerlendirilemez**
+   Kritik tehdit içeren bir olayın risk seviyesi sistem tarafından otomatik olarak düşürülemez.
+
+* HTTP Status: `422`
+* Mesaj: `Kritik tehdit düşük risk olarak değerlendirilemez`
+
+---
+
+## ER Diyagramı
+Aşağıda, uygulamada kullanılan veritabanı yapısını gösteren ER diyagramı yer almaktadır.
+
+![ER Diyagramı](./ErdiagramiKDSProje.png)
+
+## Ortam Değişkenleri
+
+Projede kullanılan ortam değişkenleri `.env.example` dosyasında tanımlanmıştır. Güvenlik sebebiyle `.env` dosyası repoya eklenmemiştir.
